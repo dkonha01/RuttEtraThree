@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html >
+<head>
+  <meta charset="UTF-8">
+  <title>rutt etra video filter (three.js)</title>
+  
+  
+  
+  
+  
+</head>
+
+<body>
+  <html>
+<head>
+
+<meta charset="utf-8">
+
+<title>WebMidi</title>
+  
+
+<!-- three -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r82/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js" type="text/javascript"></script>
+
+<!--
+<script src="assets/js/lib/three/stats.js" type="text/javascript"></script>
+<script src="assets/js/lib/three/dat.gui.js" type="text/javascript"></script>
+-->
+
+</head>
+<body>
+
+
+
+
+
+<script>
+/*
+
+// stats
+
+var stats = new Stats();
+
+//stats.setMode(1); // 0:fps, 1:ms, 2:mb
+
+// align top-left
+stats.domElement.style.position = 'fixed';
+stats.domElement.style.left = '0px';
+stats.domElement.style.bottom = '0px';
+
+$('body').append(stats.domElement);
+*/
+</script>
+
+
+
+<script>
+
+var scene;
+var camera;
+var renderer;
+//var controls;
+
+// video raster
+
+var video;
+var videoImage;
+var videoImageContext;
+
+var _imageHeight;
+var _imageWidth;
+
+
+// lines
+
+var _lineGroup;
+
+var _material;
+
+
+//var datGUI = new dat.GUI();
+
+var guiControls = new function(){
+	this.stageSize = 1;
+	this.scale = 1.0;
+	this.scanStepX = 1;
+	this.scanStepY = 1;
+	this.lineThickness = 10;
+	this.opacity = 1.0;
+	this.depth = 50;
+	//this.autoRotate = false
+}
+
+/*
+datGUI.add(guiControls, 'stageSize', 0, 1);
+datGUI.add(guiControls, 'scale', 0, 1);
+datGUI.add(guiControls, 'scanStepX', 0, 100);
+datGUI.add(guiControls, 'scanStepY', 0, 100);
+datGUI.add(guiControls, 'lineThickness', 1, 10);
+datGUI.add(guiControls, 'opacity', 0, 1);
+datGUI.add(guiControls, 'depth', 0, 100);
+//datGUI.add(guiControls, 'autoRotate');
+
+dat.GUI.toggleHide();
+*/
+
+
+function runme()
+{
+	//log('runme running');
+
+	init();
+	animate();
+}
+
+runme();
+
+
+
+function init()
+{
+	var container;
+
+	container = document.createElement('div');
+	document.body.appendChild(container);
+
+
+	// vars
+
+	var SCREEN_WIDTH = window.innerWidth;
+	var SCREEN_HEIGHT = window.innerHeight;
+	var SCREEN_PIXEL_RATIO = window.devicePixelRatio;
+
+	var PI = Math.PI;
+	var TWO_PI = PI*2;
+
+	var VIEW_ANGLE = 45;
+	var ASPECT = SCREEN_WIDTH / SCREEN_HEIGHT;
+	var NEAR = 0.1;
+	var FAR = 20000000;
+
+
+	//----------
+	// scene
+	//----------
+
+		scene = new THREE.Scene();
+
+
+    //----------
+	// camera
+	//----------
+
+		camera = new THREE.PerspectiveCamera(VIEW_ANGLE, ASPECT, NEAR, FAR);
+
+		//camera.position.set(0,0,450);
+
+		camera.position.set(0,0,400);
+
+
+	//----------
+	// objects
+	//----------
+		
+		// create the video element
+		video = document.createElement('video');
+
+		video.src = 'MoE.mp4';
+/////////////////////////////////////////////////////////////////////////
+		video.load(); // must call after setting/changing source
+		video.play();
+
+		video.loop = true;
+		
+		videoImage = document.createElement('canvas');
+		//videoImage.width = 480;
+		//videoImage.height = 204;
+
+		videoImageContext = videoImage.getContext('2d');
+
+		_imageWidth = videoImage.width;
+		_imageHeight = videoImage.height;
+
+		//videoImageContext.fillStyle = '#ffffff';
+		//videoImageContext.fillRect(0, 0, videoImage.width, videoImage.height);
+		
+
+		videoImageContext.drawImage(video,0,0,_imageWidth,_imageHeight);
+
+		// Grab the pixel data from the backing canvas
+		var _data = videoImageContext.getImageData(0,0,videoImage.width,videoImage.height).data;
+
+
+
+
+		_lineGroup = new THREE.Object3D();
+
+
+
+		_material = new THREE.LineBasicMaterial({
+			//color: 0xffffff,
+			color: 0x43007f,
+			linewidth: guiControls.lineThickness,
+			depthTest: false,
+			//blending: THREE.AdditiveBlending,
+			//vertexColors: true,
+			//transparent: true,
+			//opacity: 0.7
+		});
+
+		var x = 0;
+		var y = 0;
+		
+		//_material.vertexColors = THREE.VertexColors;
+	
+
+		for(y=0; y<_imageHeight; y+=guiControls.scanStepY) 
+		{
+
+			var _geometry = new THREE.Geometry();
+
+			for(x=0; x<_imageWidth; x+=guiControls.scanStepX)
+			{
+				//var color = new THREE.Color(getColor(x, y, _data));
+
+				//var brightness = getBrightness(color);
+
+				var cx = x - _imageWidth/2;
+				var cy = y - _imageHeight/2;
+				//var cz = -brightness * _guiOptions.depth + _guiOptions.depth/2;
+				//var cz = Math.random()*10;
+				var cz = 0;
+
+				var posn = new THREE.Vector3(cx,cy,cz);
+				
+				//geometry.vertices.push(new THREE.Vertex(posn));
+				_geometry.vertices.push(posn);
+
+				//_geometry.colors.push(color);
+			}
+
+			// add a line
+			var _line = new THREE.Line(_geometry, _material);
+			//var _line = new THREE.LineSegments(_geometry, _material);
+
+
+			//log(line);
+
+			_lineGroup.add(_line);
+		}
+
+
+		// flip it the right way up
+		_lineGroup.rotation.z = PI;
+
+		scene.add(_lineGroup);
+
+
+
+		if(1==0)
+		{
+			var faces = _geometry.faces;
+			var size = faces.length;
+			var face;
+
+			// initialize vertex colors prior to rendering
+			for (var i = 0; i < size; i++) 
+			{
+				face = faces[i];
+				var color = new THREE.Color( 1, 0, 1 );
+				face.vertexColors = [color, color, color];
+			}
+
+		}
+
+
+	//----------
+	// controls
+	//----------
+
+		var controls;
+
+		controls = new THREE.OrbitControls(camera);
+		
+
+	//----------
+	// events
+	//----------
+
+		window.addEventListener('resize', onWindowResize, false);
+
+
+	//----------
+	// render
+	//----------
+
+		var args = {
+			//alpha:true,
+			//antialias: true // too slow
+		};
+
+		renderer = new THREE.WebGLRenderer(args);
+
+		renderer.setClearColor(0xffffff, 1);
+		//renderer.setClearColor(0x000000, 0);
+		renderer.setPixelRatio(SCREEN_PIXEL_RATIO); //Set pixel aspect ratio
+		renderer.setSize(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+		// attach to dom
+		container.appendChild(renderer.domElement);
+		
+		//render();
+}
+
+
+function render()
+{
+
+	if(video.readyState === video.HAVE_ENOUGH_DATA && !video.paused && !video.ended) // and video.currentTime > 0 
+	{
+		videoImageContext.drawImage(video,0,0,_imageWidth,_imageHeight);
+
+		var _data = videoImageContext.getImageData(0,0,videoImage.width,videoImage.height).data;
+
+		var i = 0;
+
+		_lineGroup.traverseVisible(function(e)
+		{
+			
+			if(e instanceof THREE.Line)
+			{
+
+				var y = guiControls.scanStepY*i;
+
+				for(v=0; v<e.geometry.vertices.length; v++)
+				{
+					var x = v*guiControls.scanStepX;
+
+					var color = new THREE.Color(getColor(x, y, _data));
+					var brightness = getBrightness(color);
+
+					var cz = -brightness * guiControls.depth + guiControls.depth/2;
+
+					e.geometry.vertices[v].z = cz;
+    			}
+
+    			e.geometry.verticesNeedUpdate = true;
+
+    			i++;
+
+			};
+
+		});
+
+	}
+
+	renderer.render(scene, camera);
+}
+
+
+function animate(){
+
+	requestAnimationFrame(animate);
+	
+	//stats.update();
+
+	render();
+}
+
+
+function onWindowResize(){
+
+	camera.aspect = window.innerWidth / window.innerHeight;
+	camera.updateProjectionMatrix();
+	renderer.setSize(window.innerWidth, window.innerHeight);
+	render();
+}
+
+
+function rgbToHex(r, g, b)
+{
+    if (r > 255 || g > 255 || b > 255)
+        throw "Invalid color component";
+    return ((r << 16) | (g << 8) | b).toString(16);
+}
+
+
+// Returns a hexidecimal color for a given pixel in the pixel array.
+
+function getColor(x, y, _pixels)
+{
+	var base = (Math.floor(y) * _imageWidth + Math.floor(x)) * 4;
+
+	var c = {
+		r: _pixels[base + 0],
+		g: _pixels[base + 1],
+		b: _pixels[base + 2],
+		a: _pixels[base + 3]
+	};
+	return (c.r << 16) + (c.g << 8) + c.b;
+}
+
+
+// return pixel brightness between 0 and 1 based on human perceptual bias
+
+function getBrightness(c) 
+{
+	return ( 0.34 * c.r + 0.5 * c.g + 0.16 * c.b );
+}
+
+</script>
+
+
+</body>
+</html>
+  
+    <script src="js/index.js"></script>
+
+</body>
+</html>
