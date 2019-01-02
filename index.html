@@ -1,4 +1,4 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html >
 <head>
   <meta charset="UTF-8">
@@ -75,7 +75,8 @@ function gotStream(stream)
 {
 	if (window.URL)
 	{   camvideo.srcObject = stream;   }
- }
+	else // Opera
+	{   camvideo.src = stream;   }
 
 	camvideo.onerror = function(e)
 	{   stream.stop();   };
