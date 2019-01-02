@@ -74,9 +74,8 @@ var camvideo = document.getElementById('monitor');
 function gotStream(stream)
 {
 	if (window.URL)
-	{   camvideo.src = window.URL.createObjectURL(stream);   }
-	else // Opera
-	{   camvideo.src = stream;   }
+	{   camvideo.srcObject = stream;   }
+ }
 
 	camvideo.onerror = function(e)
 	{   stream.stop();   };
